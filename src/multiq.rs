@@ -1,5 +1,7 @@
 use std::sync::{Arc, Condvar, Mutex};
-/// Lock-based queue that uses 1 lock for head and 1 for tail, push works on 1 lock and pop uses 2 locks 
+/// A lock-based general purpose queue. Implenemented based on the book
+/// "C++ Concurrency in Action: Practical Multithreading" by Anthony Williams.
+/// This queue uses 1 lock for head and 1 for tail, push() works on 1 lock and pop() uses 2 locks
 /// if there is no data in head and it has to try to look in a tail.
 #[derive(Debug, Clone)]
 pub struct Multiq<T: Clone> {
@@ -27,6 +29,7 @@ impl<T: Clone> Data<T> {
 }
 
 impl<T: Clone + PartialEq + std::fmt::Debug> Multiq<T> {
+    /// Creates a new queue.
     pub fn new(value: T) -> Multiq<T> {
         let queue = Data::new(value);
         let empty = Mutex::new(Data {
@@ -42,6 +45,7 @@ impl<T: Clone + PartialEq + std::fmt::Debug> Multiq<T> {
         }
     }
 
+    /// Tales a value from the front of the queue.
     pub fn pop(&mut self) -> Option<T> {
         let head = &mut self
             .queue
@@ -94,7 +98,8 @@ impl<T: Clone + PartialEq + std::fmt::Debug> Multiq<T> {
         value
     }
 
-    pub fn wait_and_pop(&mut self) -> Option<T> {
+    /// Pop that waits for a new value to be pushed into queue if it's empty.
+    pub fn wait_and_pop(&mut self) -> T {
         let head = &mut self
             .queue
             .head
@@ -144,9 +149,11 @@ impl<T: Clone + PartialEq + std::fmt::Debug> Multiq<T> {
             // remove contents of tail
             tail_lock.contents = (None, None);
         }
-        value
+        // always waits for value so can unwrap
+        value.unwrap()
     }
 
+    /// Pushes a value into the back of the queue.
     pub fn push(&mut self, value: T) {
         let mut tail_lock = self.queue.tail.lock().expect("lock acquire failed");
         if tail_lock.contents.0.is_none() {
@@ -164,6 +171,7 @@ impl<T: Clone + PartialEq + std::fmt::Debug> Multiq<T> {
         self.queue.cvar.notify_one();
     }
 
+    /// Returns true if the queue contains no elements.
     pub fn is_empty(&self) -> bool {
         let head = &self
             .queue

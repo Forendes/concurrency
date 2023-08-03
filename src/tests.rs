@@ -23,7 +23,8 @@ fn queue_test() {
         q4.pop();
     });
     let thread3 = thread::spawn(move || {
-        assert!(q5.wait_and_pop().is_some());
+        let value: i32 = q5.wait_and_pop();
+        assert!(value.is_positive())
     });
     let thread4 = thread::spawn(move || q6.push(3));
     thread1.join().unwrap();
