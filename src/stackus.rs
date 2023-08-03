@@ -106,7 +106,7 @@ impl<T> Stackus<T> {
     }
 
     /// If multiple threads are calling pop() on the same stack instance, need a way to
-    /// track when it's safe to delete a node, this essentially a special purpose GCC just for nodes.
+    /// track when it's safe to delete a node, this essentially a special purpose GC just for nodes.
     /// If there are no threads calling pop(), it's safe to delete all the nodes awaiting deletion,
     /// threads_in_pop incremented on entry and decremented on exit, its's safe to delete
     /// nodes when the counter is zero.
@@ -150,6 +150,7 @@ impl<T> Stackus<T> {
         }
     }
 
+    /// Returns true if the stack contains no elements.
     pub fn is_empty(&self) -> bool {
         if self.head.load(Ordering::SeqCst).is_null() {
             true
